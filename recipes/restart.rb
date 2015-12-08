@@ -1,7 +1,8 @@
 #
-# Author:: Ben Newton (<ben@sumologic.com>)
+# Author::  Duc Ha (<duc@sumologic.com>)
 # Cookbook Name:: sumologic-collector
-# Recipe:: Delete sumo.conf and json file
+# Recipe:: Restart Sumo Logic Collector, typically for a local configuration collector management change to take effect
+#
 #
 # Copyright 2013, Sumo Logic
 #
@@ -18,12 +19,16 @@
 # limitations under the License.
 #
 
-# Deleting the sumo.conf file because it has a username and password, and the json to just be tidy
-
-file node['sumologic']['sumo_conf_path'] do
-  action :delete
+Chef::Log.info "Restart Collector."
+if File.exist? node['sumologic']['installDir']
+  Chef::Log.info "Restart Collector at #{node['sumologic']['installDir']}."
+else
+  Chef::Log.info "Collector Directory is not found at #{node['sumologic']['installDir']}. Will not do anything."
+  return
 end
 
-file node['sumologic']['sumo_json_path'] do
-  action :delete
+execute "Restart Sumo Collector" do
+  command node['sumologic']['collectorRestartCmd']
+  cwd node['sumologic']['installDir']
+  timeout 3600
 end

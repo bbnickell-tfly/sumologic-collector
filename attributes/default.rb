@@ -21,7 +21,12 @@
 # default sumocollector attributes
 
 # Collector Name if not set defaults to chef node name
-default['sumologic']['name']      = nil
+default['sumologic']['name'] = nil
+
+# Enable Local Configuration Collector Management by default. With this one can update the collector's sources through their local json configuration files.
+default['sumologic']['local_management'] =  true
+# IMPORTANT: Set this to true if the sumo_json_path is a directory
+default['sumologic']['use_json_path_dir'] = false
 
 # Data Bag for Collector Credentials
 default['sumologic']['credentials']['bag_name'] = 'sumo-creds'
@@ -49,64 +54,92 @@ default['sumologic']['json_template'] = nil
 # template name from a custom sumo.conf configuration cookbook.
 default['sumologic']['conf_template'] = nil
 
-#Platform Specific Attributes
+default['sumologic']['use_proxy'] = false
+default['sumologic']['proxy'] = {
+  'host' => nil,
+  'port' => nil
+}
+
+default['sumologic']['collectorTarUrl'] = 'https://collectors.sumologic.com/rest/download/tar'
+default['sumologic']['collectorTarName'] = 'sumocollector.tar.gz'
+
+#RPMs
+default['sumologic']['collectorRPMUrl'] = 'https://collectors.sumologic.com/rest/download/rpm/64'
+#DEB
+default['sumologic']['collectorDEBUrl'] = 'https://collectors.sumologic.com/rest/download/deb/64'
+
+
+# Platform Specific Attributes
 case platform
-    # Currently have all linux variants using the scripted installer
-    when 'redhat', 'centos', 'scientific', 'fedora', 'suse', 'amazon', 'oracle', 'debian', 'ubuntu'
-        # Install Path
-        default['sumologic']['installDir']     = '/opt/SumoCollector'
+# Currently have all linux variants using the scripted installer
+when 'redhat', 'centos', 'scientific', 'fedora', 'suse', 'amazon', 'oracle', 'debian', 'ubuntu'
+  # Install Path
+  default['sumologic']['installDir'] = '/opt/SumoCollector'
 
-        # Installer Name
-        default['sumologic']['installerName'] = node['kernel']['machine'] =~ /^i[36']86$/ ? 'SumoCollector_linux32.sh' : 'SumoCollector_linux64.sh'
+  # Installer Name
+  default['sumologic']['installerName'] = node['kernel']['machine'] =~ /^i[36']86$/ ? 'SumoCollector_linux32.sh' : 'SumoCollector_linux64.sh'
 
-        # Install Command
-        default['sumologic']['installerCmd'] = "sh #{default['sumologic']['installerName']} -q -dir #{default['sumologic']['installDir']}"
+  # Install Command
+  default['sumologic']['installerCmd'] = "sh #{default['sumologic']['installerName']} -q -dir #{default['sumologic']['installDir']}"
 
-        # Download Path - Either 32bit or 64bit according to the architecture
-        default['sumologic']['downloadURL'] = node['kernel']['machine'] =~ /^i[36']86$/ ? 'https://collectors.sumologic.com/rest/download/linux/32' : 'https://collectors.sumologic.com/rest/download/linux/64'
+  # Download Path - Either 32bit or 64bit according to the architecture
+  default['sumologic']['downloadURL'] = node['kernel']['machine'] =~ /^i[36']86$/ ? 'https://collectors.sumologic.com/rest/download/linux/32' : 'https://collectors.sumologic.com/rest/download/linux/64'
 
-        # Path to 'sumo.conf'
-        default['sumologic']['sumo_conf_path'] = '/etc/sumo.conf'
+  # Path to 'sumo.conf'
+  default['sumologic']['sumo_conf_path'] = '/etc/sumo.conf'
 
-        # Path to 'sumo.json'
-        default['sumologic']['sumo_json_path'] = '/etc/sumo.json'
-    when 'windows'
-        # Install Path
-        default['sumologic']['installDir']     = 'C:/sumo'  # We'd like to set this to C:/Program Files/Sumo Logic Collector', but there are issues with the Program Files directory.
-                                                            # See this for more info: https://tickets.opscode.com/browse/CHEF-4453
+  # Path to 'sumo.json' or the json directory
+  default['sumologic']['sumo_json_path'] = '/etc/sumo.json'
+# default['sumologic']['sumo_json_path'] = '/tmp/JSONDIR'
 
-        # Installer Name
-        default['sumologic']['installerName'] = node['kernel']['machine'] =~ /^x86_64$/ ? 'SumoCollector_windows-x64.exe' : 'SumoCollector_windows.exe'
+  # Collector Restart Command
+  default['sumologic']['collectorRestartCmd'] = "#{default['sumologic']['installDir']}/collector restart"
+when 'windows'
+  # Install Path
+  default['sumologic']['installDir'] = 'C:/sumo' # We'd like to set this to C:/Program Files/Sumo Logic Collector', but there are issues with the Program Files directory.
+  # See this for more info: https://tickets.opscode.com/browse/CHEF-4453
 
-        # Install Command
-        default['sumologic']['installerCmd'] = "start /wait #{default['sumologic']['installerName']} -q -dir #{default['sumologic']['installDir']}"
+  # Installer Name
+  default['sumologic']['installerName'] = node['kernel']['machine'] =~ /^x86_64$/ ? 'SumoCollector_windows-x64.exe' : 'SumoCollector_windows.exe'
 
-        # Download Path - Either 32bit or 64bit according to the architecture
-        default['sumologic']['downloadURL'] = node['kernel']['machine'] =~ /^x86_64$/ ? 'https://collectors.sumologic.com/rest/download/win64' : 'https://collectors.sumologic.com/rest/download/windows'
+  # Install Command
+  default['sumologic']['installerCmd'] = "start /wait #{default['sumologic']['installerName']} -q -dir #{default['sumologic']['installDir']}"
 
-        # Path to 'sumo.conf'
-        default['sumologic']['sumo_conf_path'] = 'C:/sumo/sumo.conf'
+  # Download Path - Either 32bit or 64bit according to the architecture
+  default['sumologic']['downloadURL'] = node['kernel']['machine'] =~ /^x86_64$/ ? 'https://collectors.sumologic.com/rest/download/win64' : 'https://collectors.sumologic.com/rest/download/windows'
 
-        # Path to 'sumo.json'
-        default['sumologic']['sumo_json_path'] = 'C:/sumo/sumo.json'
-    else
-        # Just have empty install commands for now as a placeholder
+  # Path to 'sumo.conf'
+  default['sumologic']['sumo_conf_path'] = 'C:/sumo/sumo.conf'
 
-        # Install Path
-        default['sumologic']['installDir']     = '/opt/SumoCollector'
+  # Path to 'sumo.json' or the json directory
+  default['sumologic']['sumo_json_path'] = 'C:/sumo/sumo.json'
+# default['sumologic']['sumo_json_path'] = 'C:/sumo/JSONDIR'
 
-        # Installer Name - Either 32bit or 64bit according to the architecture
-        default['sumologic']['installerName'] = ''
+  # Collector Restart Command
+  default['sumologic']['collectorRestartCmd'] = 'net stop "sumo-collector" && net start "sumo-collector"'
+else
+  # Just have empty install commands for now as a placeholder
 
-        # Install Command
-        default['sumologic']['installerCmd'] = ''
+  # Install Path
+  default['sumologic']['installDir'] = '/opt/SumoCollector'
 
-        # Download Path - Either 32bit or 64bit according to the architecture
-        default['sumologic']['downloadURL'] = ''
+  # Installer Name - Either 32bit or 64bit according to the architecture
+  default['sumologic']['installerName'] = ''
 
-        # Path to 'sumo.conf'
-        default['sumologic']['sumo_conf_path'] = '/etc/sumo.conf'
+  # Install Command
+  default['sumologic']['installerCmd'] = ''
 
-        # Path to 'sumo.json'
-        default['sumologic']['sumo_json_path'] = '/etc/sumo.json'
+  # Download Path - Either 32bit or 64bit according to the architecture
+  default['sumologic']['downloadURL'] = ''
+
+  # Path to 'sumo.conf'
+  default['sumologic']['sumo_conf_path'] = '/etc/sumo.conf'
+
+  # Path to 'sumo.json' or the json directory
+  default['sumologic']['sumo_json_path'] = '/etc/sumo.json'
+  # default['sumologic']['sumo_json_path'] = '/tmp/JSONDIR'
+
+  # Collector Restart Command
+  default['sumologic']['collectorRestartCmd'] = "#{default['sumologic']['installDir']}/collector restart"
 end
+

@@ -9,6 +9,16 @@ This file is used to list changes made in each version of sumologic-collector.
 ## 1.2.00:
 
 * Updated cookbook to support Access IDs and Keys
+* Updated cookbook to support Local Collector Management and JSON directory option.
+
+## 1.2.5
+
+* Add basic serverspec
+
+## 1.2.6
+
+* Add support for restarting the collector on `Windows`
+
 
 - - -
 Check the [Markdown Syntax Guide](http://daringfireball.net/projects/markdown/syntax) for help with Markdown.
